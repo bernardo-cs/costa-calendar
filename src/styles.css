@@ -1,0 +1,116 @@
+/* ============================================================
+   Casa da Costa — design tokens + base CSS
+   Warm paper/ink palette (oklch), clay brand, status hues.
+   Ported from the "Casa da Vó" design; person palette extended
+   from 5 → 9 for the real family cast.
+   ============================================================ */
+:root {
+  /* paper / ink — warm neutral */
+  --paper:    oklch(0.978 0.008 85);
+  --paper-2:  oklch(0.962 0.01 84);
+  --card:     oklch(0.995 0.004 85);
+  --ink:      oklch(0.255 0.012 60);
+  --ink-soft: oklch(0.46 0.014 62);
+  --ink-faint:oklch(0.62 0.012 65);
+  --line:     oklch(0.9 0.012 80);
+  --line-2:   oklch(0.84 0.014 78);
+
+  /* brand + status (L~0.6, shared C, varied hue) */
+  --brand:    #b06a44;                /* clay */
+  --brand-ink:oklch(0.45 0.1 42);
+  --sage:     oklch(0.585 0.072 150); /* confirmed */
+  --ochre:    oklch(0.7 0.1 78);      /* tentative */
+  --alert:    oklch(0.56 0.13 28);    /* conflict / review */
+
+  /* person identity colors — 9 hues spread around the wheel */
+  --p0: oklch(0.62 0.095 22);   /* red-clay   */
+  --p1: oklch(0.6 0.07 305);    /* violet     */
+  --p2: oklch(0.6 0.088 150);   /* green      */
+  --p3: oklch(0.6 0.09 235);    /* blue       */
+  --p4: oklch(0.66 0.095 70);   /* amber      */
+  --p5: oklch(0.6 0.1 350);     /* magenta    */
+  --p6: oklch(0.55 0.07 200);   /* teal       */
+  --p7: oklch(0.62 0.1 130);    /* olive-lime */
+  --p8: oklch(0.5 0.04 60);     /* warm grey  */
+
+  --r: 10px;
+  --shadow: 0 1px 2px oklch(0.4 0.03 60 / 0.06), 0 8px 24px oklch(0.4 0.03 60 / 0.06);
+  --shadow-sm: 0 1px 2px oklch(0.4 0.03 60 / 0.07);
+  --font-ui: "Hanken Grotesk", system-ui, sans-serif;
+  --font-display: "Newsreader", Georgia, serif;
+  --font-mono: "Space Mono", ui-monospace, monospace;
+  --gap: 20px;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body {
+  font-family: var(--font-ui);
+  background: var(--paper);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+  font-size: 15px;
+  line-height: 1.45;
+}
+#root { height: 100%; }
+::selection { background: oklch(0.6 0.092 45 / 0.22); }
+
+.boot {
+  height: 100%; display: flex; align-items: center; justify-content: center;
+  color: var(--ink-faint); font-family: var(--font-display); font-size: 18px;
+}
+
+/* hide scrollbars cosmetically but keep scroll */
+.scroll { overflow: auto; scrollbar-width: thin; scrollbar-color: var(--line-2) transparent; }
+.scroll::-webkit-scrollbar { width: 9px; height: 9px; }
+.scroll::-webkit-scrollbar-thumb { background: var(--line-2); border-radius: 99px; border: 2px solid var(--paper); }
+
+.mono { font-family: var(--font-mono); }
+.serif { font-family: var(--font-display); }
+
+/* ── password gate ───────────────────────────────────────── */
+.gate {
+  height: 100%; display: flex; align-items: center; justify-content: center;
+  padding: 24px; background: var(--paper);
+}
+.gate-card {
+  width: 100%; max-width: 340px; display: flex; flex-direction: column;
+  align-items: center; text-align: center; gap: 12px;
+  background: var(--card); border: 1px solid var(--line);
+  border-radius: var(--r); box-shadow: var(--shadow); padding: 32px 28px;
+}
+.gate-mark { font-size: 26px; line-height: 1; opacity: 0.8; }
+.gate-title { margin: 0; font-size: 24px; font-weight: 500; color: var(--ink); }
+.gate-sub { margin: 0 0 4px; font-size: 13.5px; color: var(--ink-soft); line-height: 1.4; }
+.gate-input {
+  width: 100%; padding: 11px 13px; font-size: 15px; color: var(--ink);
+  background: var(--paper); border: 1px solid var(--line-2);
+  border-radius: 8px; outline: none; transition: border-color 0.15s;
+}
+.gate-input:focus { border-color: var(--brand); }
+.gate-input:disabled { opacity: 0.6; }
+.gate-btn {
+  width: 100%; padding: 11px 13px; font-family: var(--font-ui);
+  font-size: 15px; font-weight: 600; color: #fff; cursor: pointer;
+  background: var(--brand); border: 1px solid transparent;
+  border-radius: 8px; transition: filter 0.15s;
+}
+.gate-btn:hover:not(:disabled) { filter: brightness(1.05); }
+.gate-btn:disabled { opacity: 0.55; cursor: default; }
+.gate-remember {
+  display: flex; align-items: center; gap: 7px; align-self: flex-start;
+  font-size: 12.5px; color: var(--ink-soft); cursor: pointer; user-select: none;
+}
+.gate-remember input { accent-color: var(--brand); cursor: pointer; }
+.gate-msg { font-size: 12.5px; line-height: 1.4; margin-top: 2px; }
+.gate-err { color: var(--alert); }
+.gate-faint { color: var(--ink-faint); }
+
+/* hatched blocked fill */
+.hatch {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    oklch(0.6 0.092 45 / 0.13) 0 6px,
+    transparent 6px 12px
+  );
+}

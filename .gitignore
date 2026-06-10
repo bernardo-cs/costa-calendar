@@ -1,0 +1,14 @@
+node_modules/
+.playwright-mcp/
+# the plaintext data is the secret — it stays local; only data/casa.enc.json ships
+data/casa.json
+# the update workflow ships in the repo (global gitignore excludes .claude/)
+!.claude/
+!.claude/skills/
+!.claude/skills/**
+*.local
+.DS_Store
+# verification screenshots (never committed)
+desktop-*.png
+mobile-*.png
+page-*.png
