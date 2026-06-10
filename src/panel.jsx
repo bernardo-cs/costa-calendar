@@ -29,12 +29,12 @@ export function JsonBlock({ obj, compact }) {
       last = m.index + m[0].length;
     }
     if (last < ln.length) parts.push(<span key={parts.length}>{ln.slice(last)}</span>);
-    return <div key={i} style={{ whiteSpace: "pre" }}>{parts}</div>;
+    return <div key={i} style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>{parts}</div>;
   });
   return (
     <div className="mono scroll" style={{ fontSize: 12, lineHeight: 1.65, color: "var(--ink-soft)",
       background: "var(--paper-2)", border: "1px solid var(--line)", borderRadius: 9,
-      padding: compact ? "10px 12px" : "13px 15px", overflowX: "auto", minWidth: 0, maxWidth: "100%" }}>
+      padding: compact ? "10px 12px" : "13px 15px", overflowX: "hidden", minWidth: 0, maxWidth: "100%" }}>
       {lines}
     </div>
   );
