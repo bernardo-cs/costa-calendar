@@ -8,7 +8,7 @@ import { S } from "./store.js";
 import { T, MONTHS, WD1_MON, WD1_SUN, WD_FULL } from "./i18n.js";
 import {
   addDays, fmtKey, parseD, blackoutFor, personVar, PersonDot,
-  StatusBadge, LockGlyph, fmtRange, MON_SHORT, AgendaView, TODAY_KEY,
+  StatusBadge, LockGlyph, fmtRange, MON_SHORT, AgendaView, useToday,
 } from "./calendar.jsx";
 import { DataView, EntryDetail, BlackoutDetail, ReviewInbox, Lbl } from "./panel.jsx";
 
@@ -116,6 +116,7 @@ function MonthNavM({ cursor, setCursor }) {
 /* ---------- mobile month grid (dots) ---------- */
 function MonthGridM({ year, month, weekStartMon, entries, presence, onOpenDay, onSelectBlackout, onSelect }) {
   const WD = weekStartMon ? WD1_MON : WD1_SUN;
+  const todayKey = useToday();
   const weeks = useMemo(() => {
     const first = new Date(year, month, 1);
     const off = weekStartMon ? ((first.getDay() + 6) % 7) : first.getDay();
@@ -156,7 +157,7 @@ function MonthGridM({ year, month, weekStartMon, entries, presence, onOpenDay, o
             {week.map((c, ci) => {
               const { r, p, blk } = itemsFor(c.key);
               const dots = [...r.map((e) => ({ c: e.color, fill: true })), ...p.map((e) => ({ c: e.color, fill: false }))];
-              const today = c.key === TODAY_KEY;
+              const today = c.key === todayKey;
               return (
                 <button key={ci} onClick={() => onTap(c.key)} className={blk ? "hatch" : ""}
                   style={{ font: "inherit", cursor: (dots.length || blk) ? "pointer" : "default", border: "none",

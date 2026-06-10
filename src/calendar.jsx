@@ -7,16 +7,38 @@ import React from "react";
 import { S } from "./store.js";
 import { MONTHS, MON_SHORT, WD_MON, WD_SUN, WD_FULL, T, plural } from "./i18n.js";
 
-const { useMemo, useState } = React;
+const { useMemo, useState, useEffect } = React;
 
 /* ---------- date utils ---------- */
 const MS_DAY = 86400000;
 export function parseD(s) { const [y, m, d] = s.split("-").map(Number); return new Date(y, m - 1, d); }
 export function fmtKey(dt) { return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-${String(dt.getDate()).padStart(2, "0")}`; }
 export function addDays(dt, n) { const x = new Date(dt); x.setDate(x.getDate() + n); return x; }
-// Today's key (local time), computed once at load — the "you are here" anchor.
-export const TODAY = new Date();
-export const TODAY_KEY = fmtKey(TODAY);
+// Reactive "today" key (local time, YYYY-MM-DD). The day rolls over on its own:
+// checked once a minute plus whenever the tab regains focus/visibility, so a
+// calendar left open past midnight re-renders onto the new day with no refresh.
+let _todayKey = fmtKey(new Date());
+const _todaySubs = new Set();
+function _syncToday() {
+  const k = fmtKey(new Date());
+  if (k !== _todayKey) { _todayKey = k; _todaySubs.forEach((fn) => fn(k)); }
+}
+if (typeof window !== "undefined") {
+  setInterval(_syncToday, 60000);
+  window.addEventListener("focus", _syncToday);
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) _syncToday(); });
+}
+// Hook: current today-key, re-rendering the caller when the day changes.
+export function useToday() {
+  const [k, setK] = useState(_todayKey);
+  useEffect(() => {
+    const fn = (nk) => setK(nk);
+    _todaySubs.add(fn);
+    if (_todayKey !== k) setK(_todayKey); // catch a rollover between render and mount
+    return () => { _todaySubs.delete(fn); };
+  }, []);
+  return k;
+}
 export function daysBetween(a, b) { return Math.round((parseD(b) - parseD(a)) / MS_DAY); }
 export function nights(e) { return daysBetween(e.start, e.end); }
 export { MONTHS, MON_SHORT, WD_FULL };
@@ -70,6 +92,7 @@ export function blackoutFor(key) {
    ============================================================ */
 export function MonthGrid({ year, month, weekStartMon, entries, presence, selectedId, onSelect, onSelectBlackout, density }) {
   const WD = weekStartMon ? WD_MON : WD_SUN;
+  const todayKey = useToday();
 
   const weeks = useMemo(() => {
     const first = new Date(year, month, 1);
@@ -99,13 +122,13 @@ export function MonthGrid({ year, month, weekStartMon, entries, presence, select
       </div>
       {weeks.map((week, wi) => (
         <WeekRow key={wi} week={week} month={month} entries={entries} presence={presence} selectedId={selectedId}
-          onSelect={onSelect} onSelectBlackout={onSelectBlackout} density={density} lastRow={wi === weeks.length - 1} />
+          onSelect={onSelect} onSelectBlackout={onSelectBlackout} density={density} lastRow={wi === weeks.length - 1} todayKey={todayKey} />
       ))}
     </div>
   );
 }
 
-function WeekRow({ week, month, entries, presence, selectedId, onSelect, onSelectBlackout, density, lastRow }) {
+function WeekRow({ week, month, entries, presence, selectedId, onSelect, onSelectBlackout, density, lastRow, todayKey }) {
   const rowH = density === "compact" ? 92 : 116;
   const weekStartKey = week[0].key, weekEndKey = week[6].key;
 
@@ -167,7 +190,7 @@ function WeekRow({ week, month, entries, presence, selectedId, onSelect, onSelec
       borderBottom: lastRow ? "none" : "1px solid var(--line)", minHeight: effH }}>
       {week.map((c, ci) => {
         const blk = blackoutFor(c.key);
-        const today = c.key === TODAY_KEY;
+        const today = c.key === todayKey;
         return (
           <div key={ci}
             className={blk ? "hatch" : ""}
@@ -369,13 +392,14 @@ function AgendaMonth({ g, selectedId, onSelect, onSelectBlackout }) {
   );
 }
 
-function TodayMarker() {
+function TodayMarker({ todayKey }) {
+  const td = parseD(todayKey);
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
       <span style={{ width: 9, height: 9, borderRadius: 99, background: "var(--brand)", flex: "0 0 auto",
         boxShadow: "0 0 0 3px color-mix(in oklch, var(--brand) 22%, transparent)" }} />
       <span style={{ fontSize: 13, fontWeight: 700, color: "var(--brand-ink)", letterSpacing: ".02em", whiteSpace: "nowrap" }}>
-        {T.todayMark} · {TODAY.getDate()} {MON_SHORT[TODAY.getMonth()]}
+        {T.todayMark} · {td.getDate()} {MON_SHORT[td.getMonth()]}
       </span>
       <span style={{ flex: 1, height: 1, background: "color-mix(in oklch, var(--brand) 32%, transparent)" }} />
     </div>
@@ -384,6 +408,7 @@ function TodayMarker() {
 
 export function AgendaView({ entries, presence, selectedId, onSelect, onSelectBlackout }) {
   const [showPast, setShowPast] = useState(false);
+  const todayKey = useToday();
   const items = useMemo(() => {
     const list = entries.map((e) => ({ kind: "rsv", date: e.start, e }));
     S.house.blackouts.forEach((b) => {
@@ -396,7 +421,7 @@ export function AgendaView({ entries, presence, selectedId, onSelect, onSelectBl
   }, [entries, presence]);
 
   // "Past" = the stay/closure is fully over before today; it stays tucked away.
-  const isPast = (it) => (it.kind === "blk" ? it.b.end < TODAY_KEY : it.e.end <= TODAY_KEY);
+  const isPast = (it) => (it.kind === "blk" ? it.b.end < todayKey : it.e.end <= todayKey);
   const pastItems = items.filter(isPast);
   const upcoming = items.filter((it) => !isPast(it));
   const upcomingGroups = monthGroups(upcoming);
@@ -423,7 +448,7 @@ export function AgendaView({ entries, presence, selectedId, onSelect, onSelectBl
         </div>
       )}
 
-      <TodayMarker />
+      <TodayMarker todayKey={todayKey} />
 
       {upcomingGroups.length === 0 ? (
         <div style={{ fontSize: 13.5, color: "var(--ink-faint)", fontStyle: "italic" }}>{T.nothingUpcoming}</div>
