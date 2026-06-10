@@ -8,7 +8,7 @@ import { S } from "./store.js";
 import { T, MONTHS, WD1_MON, WD1_SUN, WD_FULL } from "./i18n.js";
 import {
   addDays, fmtKey, parseD, blackoutFor, personVar, PersonDot,
-  StatusBadge, LockGlyph, fmtRange, MON_SHORT, AgendaView,
+  StatusBadge, LockGlyph, fmtRange, MON_SHORT, AgendaView, TODAY_KEY,
 } from "./calendar.jsx";
 import { DataView, EntryDetail, BlackoutDetail, ReviewInbox, Lbl } from "./panel.jsx";
 
@@ -156,13 +156,20 @@ function MonthGridM({ year, month, weekStartMon, entries, presence, onOpenDay, o
             {week.map((c, ci) => {
               const { r, p, blk } = itemsFor(c.key);
               const dots = [...r.map((e) => ({ c: e.color, fill: true })), ...p.map((e) => ({ c: e.color, fill: false }))];
+              const today = c.key === TODAY_KEY;
               return (
                 <button key={ci} onClick={() => onTap(c.key)} className={blk ? "hatch" : ""}
                   style={{ font: "inherit", cursor: (dots.length || blk) ? "pointer" : "default", border: "none",
-                    borderRight: ci < 6 ? "1px solid var(--line)" : "none", background: blk ? undefined : (c.inMonth ? "transparent" : "var(--paper-2)"),
+                    borderRight: ci < 6 ? "1px solid var(--line)" : "none",
+                    background: blk ? undefined : (today ? "color-mix(in oklch, var(--brand) 8%, transparent)" : (c.inMonth ? "transparent" : "var(--paper-2)")),
                     minHeight: 52, padding: "6px 0 4px", display: "flex", flexDirection: "column", alignItems: "center", gap: 5,
                     opacity: c.inMonth ? 1 : 0.5 }}>
-                  <span className="mono" style={{ fontSize: 12, fontWeight: 700, color: blk ? "var(--brand-ink)" : (c.inMonth ? "var(--ink-soft)" : "var(--ink-faint)") }}>{c.dt.getDate()}</span>
+                  {today ? (
+                    <span className="mono" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center",
+                      minWidth: 19, height: 19, borderRadius: 99, background: "var(--brand)", color: "#fff", fontSize: 11.5, fontWeight: 700 }}>{c.dt.getDate()}</span>
+                  ) : (
+                    <span className="mono" style={{ fontSize: 12, fontWeight: 700, color: blk ? "var(--brand-ink)" : (c.inMonth ? "var(--ink-soft)" : "var(--ink-faint)") }}>{c.dt.getDate()}</span>
+                  )}
                   <span style={{ display: "flex", gap: 3, flexWrap: "wrap", justifyContent: "center", maxWidth: 42 }}>
                     {dots.slice(0, 4).map((d, i) => (
                       <span key={i} style={{ width: 6, height: 6, borderRadius: 99,

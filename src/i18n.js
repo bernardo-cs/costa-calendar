@@ -105,6 +105,11 @@ export const T = {
   extractedReservation: "↳ reserva extraída",
   setBlackoutRule: "↳ definiu regra de fecho",
   flaggedForReview: "↳ assinalada para revisão",
+  // agenda — today / past
+  todayMark: "Hoje",
+  pastStays: (n) => `${n} ${n === 1 ? "estadia anterior" : "estadias anteriores"}`,
+  hidePast: "Esconder anteriores",
+  nothingUpcoming: "Sem estadias futuras por agora.",
   // misc
   backToOverview: "← Voltar à vista geral",
   available: "Disponível",

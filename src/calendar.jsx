@@ -7,13 +7,16 @@ import React from "react";
 import { S } from "./store.js";
 import { MONTHS, MON_SHORT, WD_MON, WD_SUN, WD_FULL, T, plural } from "./i18n.js";
 
-const { useMemo } = React;
+const { useMemo, useState } = React;
 
 /* ---------- date utils ---------- */
 const MS_DAY = 86400000;
 export function parseD(s) { const [y, m, d] = s.split("-").map(Number); return new Date(y, m - 1, d); }
 export function fmtKey(dt) { return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-${String(dt.getDate()).padStart(2, "0")}`; }
 export function addDays(dt, n) { const x = new Date(dt); x.setDate(x.getDate() + n); return x; }
+// Today's key (local time), computed once at load — the "you are here" anchor.
+export const TODAY = new Date();
+export const TODAY_KEY = fmtKey(TODAY);
 export function daysBetween(a, b) { return Math.round((parseD(b) - parseD(a)) / MS_DAY); }
 export function nights(e) { return daysBetween(e.start, e.end); }
 export { MONTHS, MON_SHORT, WD_FULL };
@@ -164,6 +167,7 @@ function WeekRow({ week, month, entries, presence, selectedId, onSelect, onSelec
       borderBottom: lastRow ? "none" : "1px solid var(--line)", minHeight: effH }}>
       {week.map((c, ci) => {
         const blk = blackoutFor(c.key);
+        const today = c.key === TODAY_KEY;
         return (
           <div key={ci}
             className={blk ? "hatch" : ""}
@@ -171,15 +175,23 @@ function WeekRow({ week, month, entries, presence, selectedId, onSelect, onSelec
             style={{
               borderRight: ci < 6 ? "1px solid var(--line)" : "none",
               padding: "7px 9px", position: "relative",
-              background: c.inMonth ? (blk ? undefined : "transparent") : "var(--paper-2)",
+              background: blk ? undefined : (today ? "color-mix(in oklch, var(--brand) 7%, transparent)" : (c.inMonth ? "transparent" : "var(--paper-2)")),
               cursor: blk ? "pointer" : "default",
               opacity: c.inMonth ? 1 : 0.55,
             }}>
-            <span style={{
-              fontSize: 12.5, fontWeight: 600,
-              fontFamily: "var(--font-mono)",
-              color: blk ? "var(--brand-ink)" : (c.inMonth ? "var(--ink-soft)" : "var(--ink-faint)"),
-            }}>{c.dt.getDate()}{c.dt.getDate() === 1 ? <span style={{ fontFamily: "var(--font-ui)", fontWeight: 600 }}> {MON_SHORT[c.dt.getMonth()]}</span> : null}</span>
+            {today ? (
+              <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center",
+                minWidth: 21, height: 21, padding: "0 6px", borderRadius: 99,
+                background: "var(--brand)", color: "#fff", fontFamily: "var(--font-mono)", fontSize: 12.5, fontWeight: 700 }}>
+                {c.dt.getDate()}
+              </span>
+            ) : (
+              <span style={{
+                fontSize: 12.5, fontWeight: 600,
+                fontFamily: "var(--font-mono)",
+                color: blk ? "var(--brand-ink)" : (c.inMonth ? "var(--ink-soft)" : "var(--ink-faint)"),
+              }}>{c.dt.getDate()}{c.dt.getDate() === 1 ? <span style={{ fontFamily: "var(--font-ui)", fontWeight: 600 }}> {MON_SHORT[c.dt.getMonth()]}</span> : null}</span>
+            )}
           </div>
         );
       })}
@@ -295,7 +307,83 @@ export function LockGlyph() {
 /* ============================================================
    AGENDA (vertical list grouped by month)
    ============================================================ */
+function monthGroups(items) {
+  const groups = [];
+  items.forEach((it) => {
+    const d = parseD(it.date);
+    const label = `${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+    let g = groups[groups.length - 1];
+    if (!g || g.label !== label) { g = { label, items: [] }; groups.push(g); }
+    g.items.push(it);
+  });
+  return groups;
+}
+
+function AgendaMonth({ g, selectedId, onSelect, onSelectBlackout }) {
+  return (
+    <div>
+      <div className="serif" style={{ fontSize: 19, fontWeight: 500, color: "var(--ink)", marginBottom: 10, display: "flex", alignItems: "baseline", gap: 10 }}>
+        {g.label}
+        <span style={{ flex: 1, height: 1, background: "var(--line)" }} />
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {g.items.map((it, i) =>
+          it.kind === "blk" ? (
+            <div key={i}>
+              <button onClick={() => onSelectBlackout(it.b)} className="hatch"
+                style={{ textAlign: "left", border: "1px dashed var(--brand)", borderRadius: 11, padding: "14px 16px",
+                  cursor: "pointer", font: "inherit", display: "flex", alignItems: "center", gap: 12, width: "100%" }}>
+                <span style={{ color: "var(--brand-ink)" }}><LockGlyph /></span>
+                <div>
+                  <div style={{ fontWeight: 700, color: "var(--brand-ink)" }}>{T.houseClosed} · {it.b.label}</div>
+                  <div style={{ fontSize: 12.5, color: "var(--ink-soft)" }}>{fmtRange({ start: it.b.start, end: it.b.end })} — {it.b.detail}</div>
+                </div>
+              </button>
+              {it.around && it.around.length > 0 && (
+                <div style={{ paddingLeft: 18, marginTop: 8 }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase",
+                    color: "var(--brand-ink)", marginBottom: 7 }}>{T.whosAroundShared}</div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                    {it.around.map((p) => (
+                      <button key={p.id} onClick={() => onSelect(p.id)}
+                        style={{ font: "inherit", cursor: "pointer", display: "flex", alignItems: "center", gap: 8,
+                          background: `color-mix(in oklch, ${personVar(p.color)} 14%, var(--card))`,
+                          border: `1px solid color-mix(in oklch, ${personVar(p.color)} 30%, transparent)`,
+                          borderRadius: 99, padding: "6px 13px",
+                          boxShadow: p.id === selectedId ? `0 0 0 2px ${personVar(p.color)}` : "none" }}>
+                        <PersonDot i={p.color} />
+                        <span style={{ fontSize: 12.5, fontWeight: 600 }}>{p.who}</span>
+                        <span className="mono" style={{ fontSize: 11, color: "var(--ink-soft)" }}>{fmtRange(p)}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <AgendaRow key={i} e={it.e} selected={it.e.id === selectedId} onSelect={onSelect} />
+          )
+        )}
+      </div>
+    </div>
+  );
+}
+
+function TodayMarker() {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+      <span style={{ width: 9, height: 9, borderRadius: 99, background: "var(--brand)", flex: "0 0 auto",
+        boxShadow: "0 0 0 3px color-mix(in oklch, var(--brand) 22%, transparent)" }} />
+      <span style={{ fontSize: 13, fontWeight: 700, color: "var(--brand-ink)", letterSpacing: ".02em", whiteSpace: "nowrap" }}>
+        {T.todayMark} · {TODAY.getDate()} {MON_SHORT[TODAY.getMonth()]}
+      </span>
+      <span style={{ flex: 1, height: 1, background: "color-mix(in oklch, var(--brand) 32%, transparent)" }} />
+    </div>
+  );
+}
+
 export function AgendaView({ entries, presence, selectedId, onSelect, onSelectBlackout }) {
+  const [showPast, setShowPast] = useState(false);
   const items = useMemo(() => {
     const list = entries.map((e) => ({ kind: "rsv", date: e.start, e }));
     S.house.blackouts.forEach((b) => {
@@ -307,64 +395,43 @@ export function AgendaView({ entries, presence, selectedId, onSelect, onSelectBl
     return list;
   }, [entries, presence]);
 
-  const groups = [];
-  items.forEach((it) => {
-    const d = parseD(it.date);
-    const label = `${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
-    let g = groups[groups.length - 1];
-    if (!g || g.label !== label) { g = { label, items: [] }; groups.push(g); }
-    g.items.push(it);
-  });
+  // "Past" = the stay/closure is fully over before today; it stays tucked away.
+  const isPast = (it) => (it.kind === "blk" ? it.b.end < TODAY_KEY : it.e.end <= TODAY_KEY);
+  const pastItems = items.filter(isPast);
+  const upcoming = items.filter((it) => !isPast(it));
+  const upcomingGroups = monthGroups(upcoming);
+  const pastGroups = monthGroups(pastItems);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 26 }}>
-      {groups.map((g) => (
-        <div key={g.label}>
-          <div className="serif" style={{ fontSize: 19, fontWeight: 500, color: "var(--ink)", marginBottom: 10, display: "flex", alignItems: "baseline", gap: 10 }}>
-            {g.label}
-            <span style={{ flex: 1, height: 1, background: "var(--line)" }} />
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {g.items.map((it, i) =>
-              it.kind === "blk" ? (
-                <div key={i}>
-                  <button onClick={() => onSelectBlackout(it.b)} className="hatch"
-                    style={{ textAlign: "left", border: "1px dashed var(--brand)", borderRadius: 11, padding: "14px 16px",
-                      cursor: "pointer", font: "inherit", display: "flex", alignItems: "center", gap: 12, width: "100%" }}>
-                    <span style={{ color: "var(--brand-ink)" }}><LockGlyph /></span>
-                    <div>
-                      <div style={{ fontWeight: 700, color: "var(--brand-ink)" }}>{T.houseClosed} · {it.b.label}</div>
-                      <div style={{ fontSize: 12.5, color: "var(--ink-soft)" }}>{fmtRange({ start: it.b.start, end: it.b.end })} — {it.b.detail}</div>
-                    </div>
-                  </button>
-                  {it.around && it.around.length > 0 && (
-                    <div style={{ paddingLeft: 18, marginTop: 8 }}>
-                      <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase",
-                        color: "var(--brand-ink)", marginBottom: 7 }}>{T.whosAroundShared}</div>
-                      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                        {it.around.map((p) => (
-                          <button key={p.id} onClick={() => onSelect(p.id)}
-                            style={{ font: "inherit", cursor: "pointer", display: "flex", alignItems: "center", gap: 8,
-                              background: `color-mix(in oklch, ${personVar(p.color)} 14%, var(--card))`,
-                              border: `1px solid color-mix(in oklch, ${personVar(p.color)} 30%, transparent)`,
-                              borderRadius: 99, padding: "6px 13px",
-                              boxShadow: p.id === selectedId ? `0 0 0 2px ${personVar(p.color)}` : "none" }}>
-                            <PersonDot i={p.color} />
-                            <span style={{ fontSize: 12.5, fontWeight: 600 }}>{p.who}</span>
-                            <span className="mono" style={{ fontSize: 11, color: "var(--ink-soft)" }}>{fmtRange(p)}</span>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <AgendaRow key={i} e={it.e} selected={it.e.id === selectedId} onSelect={onSelect} />
-              )
-            )}
-          </div>
+    <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
+      {pastItems.length > 0 && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
+          <button onClick={() => setShowPast((s) => !s)}
+            style={{ alignSelf: "flex-start", display: "inline-flex", alignItems: "center", gap: 8, font: "inherit",
+              cursor: "pointer", background: "none", border: "none", padding: 0, fontSize: 12, fontWeight: 700,
+              letterSpacing: ".05em", textTransform: "uppercase", color: "var(--ink-faint)" }}>
+            <span style={{ display: "inline-block", transform: showPast ? "rotate(90deg)" : "none", transition: "transform .15s", fontSize: 10 }}>▶</span>
+            {showPast ? T.hidePast : T.pastStays(pastItems.length)}
+          </button>
+          {showPast && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 22, opacity: 0.55 }}>
+              {pastGroups.map((g) => (
+                <AgendaMonth key={g.label} g={g} selectedId={selectedId} onSelect={onSelect} onSelectBlackout={onSelectBlackout} />
+              ))}
+            </div>
+          )}
         </div>
-      ))}
+      )}
+
+      <TodayMarker />
+
+      {upcomingGroups.length === 0 ? (
+        <div style={{ fontSize: 13.5, color: "var(--ink-faint)", fontStyle: "italic" }}>{T.nothingUpcoming}</div>
+      ) : (
+        upcomingGroups.map((g) => (
+          <AgendaMonth key={g.label} g={g} selectedId={selectedId} onSelect={onSelect} onSelectBlackout={onSelectBlackout} />
+        ))
+      )}
     </div>
   );
 }
