@@ -68,12 +68,12 @@ function MobileHeader({ pipeline, lastSync, onReview }) {
         style={{ width: "100%", marginTop: 11, font: "inherit", cursor: pipeline.needsReview > 0 ? "pointer" : "default",
           display: "flex", alignItems: "center", gap: 8, padding: "9px 12px", borderRadius: 11,
           background: "var(--paper-2)", border: "1px solid var(--line)", textAlign: "left" }}>
-        <span style={{ fontSize: 15 }}>🤖</span>
-        <span style={{ fontSize: 12.5, color: "var(--ink-soft)" }}>
+        <span style={{ fontSize: 15, flexShrink: 0 }}>🤖</span>
+        <span style={{ fontSize: 12.5, color: "var(--ink-soft)", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           <strong style={{ color: "var(--ink)" }}>{T.staysFrom(pipeline.extracted, pipeline.scanned)}</strong>
         </span>
         {pipeline.needsReview > 0 && (
-          <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 700,
+          <span style={{ marginLeft: "auto", flexShrink: 0, display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 700,
             color: "var(--alert)", padding: "4px 10px", borderRadius: 99,
             background: "color-mix(in oklch, var(--alert) 11%, var(--card))",
             border: "1px solid color-mix(in oklch, var(--alert) 30%, transparent)" }}>
@@ -248,7 +248,7 @@ export function MobileShell(props) {
       <MobileHeader pipeline={pipeline} lastSync={lastSync} onReview={showReview} />
       <MobileTabs view={view} setView={setView} />
       {view === "month" && <MonthNavM cursor={cursor} setCursor={setCursor} />}
-      <div className="scroll" style={{ flex: 1, minHeight: 0, padding: "16px 16px 90px" }}>
+      <div className="scroll" style={{ flex: 1, minHeight: 0, minWidth: 0, maxWidth: "100%", padding: "16px 16px 90px" }}>
         {view === "month" && (
           <MonthGridM year={cursor.y} month={cursor.m} weekStartMon={t.weekStartMon}
             entries={entries} presence={presence}

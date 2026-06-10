@@ -34,7 +34,7 @@ export function JsonBlock({ obj, compact }) {
   return (
     <div className="mono scroll" style={{ fontSize: 12, lineHeight: 1.65, color: "var(--ink-soft)",
       background: "var(--paper-2)", border: "1px solid var(--line)", borderRadius: 9,
-      padding: compact ? "10px 12px" : "13px 15px", overflowX: "auto" }}>
+      padding: compact ? "10px 12px" : "13px 15px", overflowX: "auto", minWidth: 0, maxWidth: "100%" }}>
       {lines}
     </div>
   );
@@ -52,7 +52,7 @@ export function MsgBubble({ m, highlight }) {
         <span style={{ fontSize: 12.5, fontWeight: 700, color: personVar(m.color) }}>{m.sender}</span>
         <span className="mono" style={{ fontSize: 10.5, color: "var(--ink-faint)", marginLeft: "auto" }}>{fmtMsgTime(m.time)}</span>
       </div>
-      <div style={{ fontSize: 13.5, color: "var(--ink)", lineHeight: 1.4 }}>{m.text}</div>
+      <div style={{ fontSize: 13.5, color: "var(--ink)", lineHeight: 1.4, overflowWrap: "anywhere" }}>{m.text}</div>
     </div>
   );
 }
@@ -330,8 +330,8 @@ export function DataView({ entries, selectedId, onSelect, showConfidence, stack 
         </button>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: (showThread && !stack) ? "1fr 1fr" : "1fr", gap: 16, alignItems: "start" }}>
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      <div style={{ display: "grid", gridTemplateColumns: (showThread && !stack) ? "minmax(0,1fr) minmax(0,1fr)" : "minmax(0,1fr)", gap: 16, alignItems: "start" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10, minWidth: 0 }}>
           <div className="mono" style={{ fontSize: 11, color: "var(--ink-faint)", fontWeight: 700 }}>{T.entriesLabel(entries.length)}</div>
           {entries.map((e) => {
             const sel = e.id === selectedId;
@@ -339,13 +339,13 @@ export function DataView({ entries, selectedId, onSelect, showConfidence, stack 
               status: e.status, ...(e.review ? { review: e.review } : {}), ...(showConfidence ? { confidence: e.confidence } : {}),
               notes: e.notes, source: e.source };
             return (
-              <div key={e.id} onClick={() => onSelect(e.id)} style={{ cursor: "pointer", borderRadius: 10,
+              <div key={e.id} onClick={() => onSelect(e.id)} style={{ cursor: "pointer", borderRadius: 10, minWidth: 0,
                 outline: sel ? `2px solid ${e.review ? "var(--alert)" : personVar(e.color)}` : "none", outlineOffset: 2 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 5 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 5, minWidth: 0 }}>
                   <PersonDot i={e.color} />
                   <span style={{ fontSize: 12.5, fontWeight: 600 }}>{e.who}</span>
                   {e.review && <span style={{ fontSize: 11, color: "var(--alert)", fontWeight: 700 }}>⚠</span>}
-                  <span className="mono" style={{ fontSize: 10.5, color: "var(--ink-faint)", marginLeft: "auto" }}>→ {e.source.join(", ")}</span>
+                  <span className="mono" style={{ fontSize: 10.5, color: "var(--ink-faint)", marginLeft: "auto", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>→ {e.source.join(", ")}</span>
                 </div>
                 <JsonBlock obj={obj} compact />
               </div>
@@ -354,7 +354,7 @@ export function DataView({ entries, selectedId, onSelect, showConfidence, stack 
         </div>
 
         {showThread && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
             <div className="mono" style={{ fontSize: 11, color: "var(--ink-faint)", fontWeight: 700 }}>{T.threadLabel(S.thread.length)}</div>
             {S.thread.map((m) => {
               const kept = m.type === "booking" || m.type === "rule" || m.type === "review" || m.type === "presence";

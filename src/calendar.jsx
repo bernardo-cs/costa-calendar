@@ -375,12 +375,12 @@ function AgendaRow({ e, selected, onSelect }) {
     <button onClick={() => onSelect(e.id)}
       style={{ textAlign: "left", font: "inherit", cursor: "pointer", width: "100%",
         background: "var(--card)", border: "1px solid var(--line)", borderLeft: `4px solid ${personVar(e.color)}`,
-        borderRadius: 11, padding: "13px 16px", display: "grid", gridTemplateColumns: "92px 1fr auto", gap: 16, alignItems: "center",
+        borderRadius: 11, padding: "13px 16px", display: "grid", gridTemplateColumns: "auto minmax(0,1fr) auto", gap: 16, alignItems: "center", maxWidth: "100%",
         boxShadow: selected ? `0 0 0 2px ${isReview ? "var(--alert)" : personVar(e.color)}` : "var(--shadow-sm)",
         transition: "box-shadow .12s" }}>
-      <div className="mono" style={{ fontSize: 12.5, color: "var(--ink-soft)", fontWeight: 700 }}>{fmtRange(e)}</div>
-      <div>
-        <div style={{ fontWeight: 600, display: "flex", alignItems: "center", gap: 8 }}>{e.who}
+      <div className="mono" style={{ fontSize: 12.5, color: "var(--ink-soft)", fontWeight: 700, whiteSpace: "nowrap" }}>{fmtRange(e)}</div>
+      <div style={{ minWidth: 0 }}>
+        <div style={{ fontWeight: 600, display: "flex", alignItems: "center", gap: 8, minWidth: 0, overflowWrap: "anywhere" }}>{e.who}
           {isReview && <span style={{ fontSize: 11, color: "var(--alert)", fontWeight: 700 }}>⚠ rever</span>}</div>
         <div style={{ fontSize: 12.5, color: "var(--ink-faint)" }}>{plural(nights(e), "noite", "noites")}{e.party ? ` · ${T.people(e.party)}` : ` · ${T.partyUnknown}`}</div>
       </div>
